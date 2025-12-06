@@ -1,5 +1,5 @@
 const { Plugins, Actions, log, EventEmitter } = require('./utils/plugin');
-const { execSync } = require('child_process');
+const { exec } = require('child_process');
 
 const plugin = new Plugins('demo');
 
@@ -8,35 +8,35 @@ plugin.didReceiveGlobalSettings = ({ payload: { settings } }) => {
     log.info('didReceiveGlobalSettings', settings);
 };
 
-const createSvg = (text) => `<svg width="144" height="144" xmlns="http://www.w3.org/2000/svg">
-    <text x="72" y="120" font-family="Arial" font-weight="bold" font-size="36" fill="white" text-anchor="middle"
-        stroke="black" stroke-width="2" paint-order="stroke">
-        ${text}
-    </text>
-</svg>`;
-const timers = {};
+
 
 plugin.demo = new Actions({
-    default: {
-    },
+    default: {},
     async _willAppear({ context, payload }) {
-        // log.info("demo: ", context);
-        let n = 0;
-        timers[context] = setInterval(async () => {
-            const svg = createSvg(++n);
-            plugin.setImage(context, `data:image/svg+xml;charset=utf8,${svg}`);
-        }, 1000);
+        log.info("demo: willAppear", context);
     },
     _willDisappear({ context }) {
-        // log.info('willDisAppear', context)
-        timers[context] && clearInterval(timers[context]);
+        log.info('willDisAppear', context)
     },
     _propertyInspectorDidAppear({ context }) {
     },
     sendToPlugin({ payload, context }) {
     },
     keyUp({ context, payload }) {
+        log.info('keyUp', context);
+        // 执行 PowerShell 命令获取用户名
+        exec('powershell -Command "$env:USERNAME"', { encoding: 'utf8' }, (error, stdout, stderr) => {
+            if (error) {
+                log.error(`exec error: ${error}`);
+                plugin.setTitle(context, "Error");
+                return;
+            }
+            const username = stdout.trim();
+            log.info(`PowerShell output: ${username}`);
+            // 显示用户名
+            plugin.setTitle(context, username);
+        });
     },
-    dialDown({ context, payload }) {},
-    dialRotate({ context, payload }) {}
+    dialDown({ context, payload }) { },
+    dialRotate({ context, payload }) { }
 });
